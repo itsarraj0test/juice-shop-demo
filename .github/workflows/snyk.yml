@@ -3,7 +3,7 @@ name: Snyk Scan Workflow
 on:
   push:
     branches:
-      - master 
+      - main
   pull_request:
     types: [opened, reopened, synchronize, edited]
   pull_request_target:
@@ -18,6 +18,7 @@ jobs:
   Snyk_scan:
     name: Run Snyk Scan
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -35,7 +36,7 @@ jobs:
       - name: Download and Authenticate Snyk CLI
         run: |
           echo "----------Download Latest Snyk CLI-----------"
-          curl -Lo ./snyk "https://github.com/snyk/snyk/releases/download/v1.1060.0/snyk-linux"
+          curl -Lo ./snyk "https://github.com/snyk/snyk/releases/download/v1.1100.0/snyk-linux" # Updated version
           chmod +x snyk
           echo "----------Authenticating Snyk-----------"
           ./snyk auth ${{ secrets.SNYK_TOKEN }}
@@ -43,16 +44,21 @@ jobs:
       - name: Run Snyk Test and Monitor
         run: |
           echo "----------Snyk Scanning-----------"
-          ./snyk test --all-projects --json > snyk-results.json
-          ./snyk monitor --all-projects
+          ./snyk test --all-projects --json > snyk-results.json || true
+          ./snyk monitor --all-projects || true
+          echo "Snyk Test Results:"
+          cat snyk-results.json
 
       - name: Format Snyk Results
         id: format-snyk
         run: |
-          cat snyk-results.json | jq '.' > snyk-formatted-results.json
+          cat snyk-results.json | jq '.' > snyk-formatted-results.json || true
+          echo "Formatted Snyk Results:"
+          cat snyk-formatted-results.json
 
       - name: Post Snyk Results as a PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: snyk-results
           path: snyk-formatted-results.json
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

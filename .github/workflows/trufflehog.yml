@@ -3,7 +3,7 @@ name: TruffleHog Scan
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     types: [opened, reopened, synchronize, edited]
 
@@ -19,24 +19,29 @@ jobs:
           fetch-depth: 0 # fetch all history so multiple commits can be scanned
 
       - name: Run TruffleHog Bot Scan
+        id: trufflehog
         continue-on-error: true
         uses: trufflesecurity/TruffleHog-Enterprise-Github-Action@main
         with:
-          args: --fail-verified ${{ github.event.repository.default_branch }} HEAD --json > trufflehog-results.json
+          args: --fail-verified ${{ github.event.repository.default_branch }} HEAD --json
+        # Output redirected to file within the GitHub Actions workspace
+        run: |
+          trufflehog --regex https://github.com/${{ github.repository }} --json > trufflehog-results.json
 
       - name: Format TruffleHog Results
         id: format-trufflehog
         run: |
-          cat trufflehog-results.json | jq '.' > trufflehog-formatted-results.json
+          cat trufflehog-results.json | jq '.' > trufflehog-formatted-results.json || true
 
       - name: Post TruffleHog Results as a PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: trufflehog-results
           path: trufflehog-formatted-results.json
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload findings to GitHub Security (SARIF)
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v1
+        uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: trufflehog-results.json
