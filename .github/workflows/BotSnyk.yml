@@ -1,0 +1,33 @@
+name: Bot scan
+
+on: [pull_request]
+
+jobs:
+  scanning:
+    name: Bot scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: Snyk Bot scan
+        continue-on-error: true
+        run: |
+         rm -rf node_modules
+         rm -f package-lock.json
+         echo "----------NPM install------------"
+         npm install
+         echo "----------Download Latest Snyk CLI-----------"
+            curl -Lo ./snyk "https://github.com/snyk/snyk/releases/download/v1.1060.0/snyk-linux"
+            chmod +x snyk
+            ls -lrt
+            echo "----------Authenticating Snyk-----------"
+            ./snyk auth ${{ secrets.SNYK_TOKEN }}
+            echo "----------Snyk Scanning-----------"
+            ./snyk test --all-projects -d
+            ./snyk monitor --all-projects
+      - name: TruffleHog Bot scan
+        continue-on-error: true
+        uses: trufflesecurity/TruffleHog-Enterprise-Github-Action@main
+        with:
+            args: ${{ github.event.repository.default_branch }} HEAD --fail-verified
