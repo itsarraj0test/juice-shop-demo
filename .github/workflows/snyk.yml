@@ -1,0 +1,48 @@
+name: Snyk Scan Workflow
+
+on:
+  push:
+    branches:
+      - main  
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  Snyk_scan:
+    name: Run Snyk Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Remove Node Modules and Lock File
+        run: |
+          rm -rf node_modules
+          rm -f package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          echo "----------NPM install------------"
+          npm install
+
+      - name: Download and Authenticate Snyk CLI
+        run: |
+          echo "----------Download Latest Snyk CLI-----------"
+          curl -Lo ./snyk "https://github.com/snyk/snyk/releases/download/v1.1060.0/snyk-linux"
+          chmod +x snyk
+          echo "----------Authenticating Snyk-----------"
+          ./snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run Snyk Test and Monitor
+        run: |
+          echo "----------Snyk Scanning-----------"
+          ./snyk test --all-projects -d
+          ./snyk monitor --all-projects
+
