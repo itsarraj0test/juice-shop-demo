@@ -26,8 +26,9 @@ jobs:
         id: trufflehog
         continue-on-error: true
         run: |
+
           trufflehog --regex https://github.com/${{ github.repository }} --json > trufflehog-results.json 2> trufflehog-errors.log || true
-          cat trufflehog-errors.log
+          cat trufflehog-results.json
 
       - name: Validate TruffleHog Results
         run: |
