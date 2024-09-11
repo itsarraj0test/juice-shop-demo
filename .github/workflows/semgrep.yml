@@ -33,11 +33,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install semgrep
 
-      - name: Run Semgrep
+      - name: Run Semgrep for Push, PR, or Issues
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            semgrep --config semgrep.yml --output semgrep-results.json || true
-            semgrep --config semgrep.yml .
+            if [[ -f "semgrep.yml" ]]; then
+              semgrep --config semgrep.yml --json --output semgrep-results.json
+            else
+              echo "semgrep.yml not found, running with auto config"
+              semgrep --config "auto" --json --output semgrep-results.json
+            fi
           elif [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
             semgrep --config "auto" --json --output semgrep-output.json
           elif [[ "${{ github.event_name }}" == "issues" ]]; then
