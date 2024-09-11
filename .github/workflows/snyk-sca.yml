@@ -1,10 +1,10 @@
-name: SCA scan
+name: Snyk Software composition analysis (SCA) scan
 
 on: [push]
 
 jobs:
   scanning:
-    name: SCA scan
+    name: Snyk SCA scan
     runs-on: ubuntu-latest
 
     steps:
