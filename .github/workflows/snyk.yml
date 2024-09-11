@@ -49,16 +49,3 @@ jobs:
           echo "Snyk Test Results:"
           cat snyk-results.json
 
-      - name: Format Snyk Results
-        id: format-snyk
-        run: |
-          cat snyk-results.json | jq '.' > snyk-formatted-results.json || true
-          echo "Formatted Snyk Results:"
-          cat snyk-formatted-results.json
-
-      - name: Post Snyk Results as a PR Comment
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: snyk-results
-          path: snyk-formatted-results.json
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
