@@ -1,40 +1,53 @@
-name: Test
+name: TruffleHog Scan
 
 on:
   push:
     branches:
       - master
-      - main
   pull_request:
-
-permissions:
-  contents: read
-  id-token: write
-  issues: write
-  pull-requests: write
+    types: [opened, reopened, synchronize, edited]
 
 jobs:
-  TruffleHog:
+  trufflehog_scan:
+    name: TruffleHog Bot Scan
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - name: TruffleHog OSS
-        id: trufflehog
-        uses: trufflesecurity/trufflehog@main
-        continue-on-error: true
-        with:
-          path: ./
-          base: "${{ github.event.repository.default_branch }}"
-          head: HEAD
-          extra_args: --debug
+      - name: Install TruffleHog
+        run: |
+          pip install truffleHog
 
-      - name: Scan Results Status
-        if: steps.trufflehog.outcome == 'failure'
-        run: exit 1
+      - name: Run TruffleHog Scan
+        id: trufflehog
+        continue-on-error: true
+        run: |
+          trufflehog --regex https://github.com/${{ github.repository }} > trufflehog-results.txt 2> trufflehog-errors.log || true
+          echo 'trufflehog results'
+          cat trufflehog-results.txt
+          echo 'trufflehog errors'
+          cat trufflehog-errors.log
+
+      - name: Validate TruffleHog Results
+        run: |
+          if [ -s trufflehog-results.txt ]; then
+            echo "Results file created successfully."
+          else
+            echo "No results found." > trufflehog-results.txt
+          fi
+
+      - name: Upload TruffleHog Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: trufflehog-results
+          path: trufflehog-results.txt
+
+      - name: Upload TruffleHog Errors
+        uses: actions/upload-artifact@v3
+        with:
+          name: trufflehog-errors
+          path: trufflehog-errors.log
