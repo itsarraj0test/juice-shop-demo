@@ -1,84 +1,24 @@
-name: Semgrep Scan
-
 on:
+  workflow_dispatch: {}
+  pull_request: {}
   push:
     branches:
-      - master
-  pull_request_target:
-    types: [opened, reopened, synchronize, edited]
-  issues:
-    types: [opened]
-
-permissions:
-  issues: write
-  pull-requests: write
-  contents: read
-
+    - main
+    - master
+    paths:
+    - .github/workflows/semgrep.yml
+  schedule:
+  # random HH:MM to avoid a load spike on GitHub Actions at 00:00
+  - cron: 4 23 * * *
+name: Semgrep
 jobs:
   semgrep:
-    permissions: write-all
-    name: Run Semgrep Scan
-    runs-on: ubuntu-latest
+    name: semgrep/ci
+    runs-on: ubuntu-20.04
+    env:
+      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+    container:
+      image: returntocorp/semgrep
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
-
-      - name: Install Semgrep
-        run: |
-          python -m pip install --upgrade pip
-          pip install semgrep
-      - name: Run Semgrep for Push, PR, or Issues
-        run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            if [[ -f "semgrep.yml" ]]; then
-              semgrep --config semgrep.yml --json --output semgrep-results.json
-            else
-              echo "semgrep.yml not found, running with auto config"
-              semgrep --config "auto" --json --output semgrep-results.json
-            fi
-          elif [[ "${{ github.event_name }}" == "pull_request_target" ]]; then
-            semgrep --config "auto" --json --output semgrep-output.json
-          elif [[ "${{ github.event_name }}" == "issues" ]]; then
-            semgrep --config "auto" --json --output semgrep-issue-output.json
-          fi
-      - name: Upload Semgrep Results (for push event)
-        if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: semgrep-results
-          path: semgrep-results.json
-
-      - name: Read Semgrep output (for PR event)
-        if: ${{ github.event_name == 'pull_request_target' }}
-        id: semgrep-output
-        run: |
-          cat semgrep-output.json
-          echo "semgrep-results=$(cat semgrep-output.json)" >> $GITHUB_ENV
-      - name: Post Semgrep results as a PR comment (for PR event)
-        if: ${{ github.event_name == 'pull_request_target' }}
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: semgrep-results
-          path: semgrep-output.json
-
-      - name: Read Semgrep output (for issue event)
-        if: ${{ github.event_name == 'issues' }}
-        id: semgrep-issue-output
-        run: |
-          cat semgrep-issue-output.json
-          echo "semgrep-results=$(cat semgrep-issue-output.json)" >> $GITHUB_ENV
-      - name: Comment Semgrep results on issue
-        if: ${{ github.event_name == 'issues' }}
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          body: |
-            **Semgrep Scan Results**:
-            ```
-            ${{ steps.semgrep-issue-output.outputs.semgrep-results }}
-            ```
+    - uses: actions/checkout@v4
+    - run: semgrep ci
