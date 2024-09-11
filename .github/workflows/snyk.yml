@@ -15,37 +15,19 @@ permissions:
   contents: read
 
 jobs:
-  Snyk_scan:
-    name: Run Snyk Scan
+  security:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Remove Node Modules and Lock File
-        run: |
-          rm -rf node_modules
-          rm -f package-lock.json
-
-      - name: Install Dependencies
-        run: |
-          echo "----------NPM install------------"
-          npm install
-
-      - name: Download and Authenticate Snyk CLI
-        run: |
-          echo "----------Download Latest Snyk CLI-----------"
-          curl -Lo ./snyk "https://github.com/snyk/snyk/releases/download/v1.1100.0/snyk-linux" # Updated version
-          chmod +x snyk
-          echo "----------Authenticating Snyk-----------"
-          ./snyk auth ${{ secrets.SNYK_TOKEN }}
-
-      - name: Run Snyk Test and Monitor
-        run: |
-          echo "----------Snyk Scanning-----------"
-          ./snyk test --all-projects --json > snyk-results.json || true
-          ./snyk monitor --all-projects || true
-          echo "Snyk Test Results:"
-          cat snyk-results.json
+      - uses: actions/checkout@master
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: monitor
+          args: --sarif-file-output=snyk.sarif
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk.sarif
 
