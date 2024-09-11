@@ -40,23 +40,15 @@ jobs:
             semgrep --config "auto" --json --output semgrep-output.json
           fi
 
+      - name: Upload Semgrep Results (for push event)
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: semgrep-results
+          path: semgrep-results.json
+
       - name: Read Semgrep output (for PR event)
         if: ${{ github.event_name == 'pull_request_target' }}
         id: semgrep-output
         run: |
           cat semgrep-output.json
-          echo "semgrep-results=$(cat semgrep-output.json)" >> $GITHUB_ENV
-
-      - name: Post or Update PR Comment
-        if: ${{ github.event_name == 'pull_request_target' }}
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            **Semgrep Scan Results**:
-            ```
-            ${{ steps.semgrep-output.outputs.semgrep-results }}
-            ```
-          edit-mode: replace
-          reactions: rocket
-
