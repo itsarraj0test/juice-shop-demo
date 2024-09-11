@@ -26,12 +26,17 @@ jobs:
         id: trufflehog
         continue-on-error: true
         run: |
-          trufflehog --regex https://github.com/${{ github.repository }} --json > trufflehog-results.json
+          trufflehog --regex https://github.com/${{ github.repository }} --json > trufflehog-results.json 2> trufflehog-errors.log || true
+          cat trufflehog-errors.log
 
       - name: Format TruffleHog Results
         id: format-trufflehog
         run: |
-          cat trufflehog-results.json | jq '.' > trufflehog-formatted-results.json || true
+          if [ -s trufflehog-results.json ]; then
+            cat trufflehog-results.json | jq '.' > trufflehog-formatted-results.json
+          else
+            echo "No results to format" > trufflehog-formatted-results.json
+          fi
 
       - name: Post TruffleHog Results as a PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
