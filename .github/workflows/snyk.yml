@@ -43,6 +43,16 @@ jobs:
       - name: Run Snyk Test and Monitor
         run: |
           echo "----------Snyk Scanning-----------"
-          ./snyk test --all-projects -d
+          ./snyk test --all-projects --json > snyk-results.json
           ./snyk monitor --all-projects
 
+      - name: Format Snyk Results
+        id: format-snyk
+        run: |
+          cat snyk-results.json | jq '.' > snyk-formatted-results.json
+
+      - name: Post Snyk Results as a PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: snyk-results
+          path: snyk-formatted-results.json

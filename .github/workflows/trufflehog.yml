@@ -22,10 +22,21 @@ jobs:
         continue-on-error: true
         uses: trufflesecurity/TruffleHog-Enterprise-Github-Action@main
         with:
-          args: --fail-verified ${{ github.event.repository.default_branch }} HEAD --json
+          args: --fail-verified ${{ github.event.repository.default_branch }} HEAD --json > trufflehog-results.json
+
+      - name: Format TruffleHog Results
+        id: format-trufflehog
+        run: |
+          cat trufflehog-results.json | jq '.' > trufflehog-formatted-results.json
+
+      - name: Post TruffleHog Results as a PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: trufflehog-results
+          path: trufflehog-formatted-results.json
 
       - name: Upload findings to GitHub Security (SARIF)
         continue-on-error: true
         uses: github/codeql-action/upload-sarif@v1
         with:
-          sarif_file: trufflehog-report.json
+          sarif_file: trufflehog-results.json
