@@ -1,44 +1,39 @@
-name: TruffleHog Scan
+name: Test
 
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
-    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+  pull-requests: write
 
 jobs:
-  trufflehog_scan:
-    name: TruffleHog Bot Scan
+  TruffleHog:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Install TruffleHog
-        run: |
-          pip install truffleHog
-
-      - name: Run TruffleHog Scan
+      - name: TruffleHog OSS
         id: trufflehog
+        uses: trufflesecurity/trufflehog@main
         continue-on-error: true
-        run: |
+        with:
+          path: ./
+          base: "${{ github.event.repository.default_branch }}"
+          head: HEAD
+          extra_args: --debug
 
-          trufflehog --regex https://github.com/${{ github.repository }} --json > trufflehog-results.json 2> trufflehog-errors.log || true
-          echo 'trufflehog results'
-          cat trufflehog-results.json
-          echo 'trufflehog errors'
-          cat trufflehog-errors.log
-
-      - name: Validate TruffleHog Results
-        run: |
-          if [ -s trufflehog-results.json ]; then
-            # Perform any additional validation or conversion here
-            echo "Results file created successfully."
-          else
-            echo "No results found." > trufflehog-formatted-results.json
-          fi
-
+      - name: Scan Results Status
+        if: steps.trufflehog.outcome == 'failure'
+        run: exit 1
