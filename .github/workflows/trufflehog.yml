@@ -28,7 +28,10 @@ jobs:
         run: |
 
           trufflehog --regex https://github.com/${{ github.repository }} --json > trufflehog-results.json 2> trufflehog-errors.log || true
+          echo 'trufflehog results'
           cat trufflehog-results.json
+          echo 'trufflehog errors'
+          cat trufflehog-errors.log
 
       - name: Validate TruffleHog Results
         run: |
