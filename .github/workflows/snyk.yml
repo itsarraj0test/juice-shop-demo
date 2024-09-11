@@ -3,7 +3,7 @@ name: Snyk Scan Workflow
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     types: [opened, reopened, synchronize, edited]
   pull_request_target:
