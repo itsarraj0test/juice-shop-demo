@@ -17,7 +17,7 @@ permissions:
 jobs:
   semgrep:
     permissions: write-all
-    name: Run Semgrep Scan
+    name: Running SAST Security Scan (Semgrep)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
