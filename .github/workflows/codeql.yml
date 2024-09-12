@@ -37,3 +37,18 @@ jobs:
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
 
+    # Add step to print the output of CodeQL
+    - name: Upload CodeQL Results
+      run: cat codeql-results.sarif | jq '.' # Ensure jq is installed to format output
+
+    # Final step to print a summary (based on analysis results)
+    - name: Summarize CodeQL Results
+      run: |
+        echo "CodeQL Analysis Summary:"
+        # Customize this based on your needs for summary generation
+        if grep -q '"ruleId"' codeql-results.sarif; then
+          echo "Potential security vulnerabilities found!"
+          grep '"ruleId"' codeql-results.sarif
+        else
+          echo "No security vulnerabilities found."
+        fi
