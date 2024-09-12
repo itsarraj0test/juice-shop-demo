@@ -1,4 +1,4 @@
-name: Semgrep Scan
+name: Running SAST Security Scan (Semgrep)
 
 on:
   push:
