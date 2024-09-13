@@ -1,32 +1,44 @@
-name: owasp-dep-scan
+name: OWASP Dep-Scan CI
+
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
-    types: [opened, reopened, synchronize, edited]
+    branches:
+      - main
 
 jobs:
-  dep_scan:
-    name: Run dep Scan
+  dep-scan:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          ref: master
+      # Checkout the Juice Shop code
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Run dep Scan
-      - uses: AppThreat/dep-scan-action@master
+      # Install dependencies (Node.js)
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          # The target directory to be scanned. Optional.
-          src: /github/workspace
-          # Output file for the generated report. Optional.
-          report_file: /github/workspace/reports/depscan.json
-          # Must equal "I have sponsored OWASP-dep-scan" for action to run. Required.
-          profile: generic
-          thank_you: "I have not sponsored OWASP-dep-scan."
-        env:
-          VDB_HOME: ${{ github.workspace }}/db
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          node-version: '16'
+
+      - name: Install Project Dependencies
+        run: npm install
+
+      # Install OWASP Dep-Scan
+      - name: Install OWASP Dep-Scan
+        run: |
+          curl -LO https://github.com/appthreat/depscan-bin/releases/latest/download/depscan-linux-amd64
+          chmod +x depscan-linux-amd64
+
+      # Run the scan
+      - name: Run OWASP Dep-Scan
+        run: |
+          ./depscan-linux-amd64 --src $GITHUB_WORKSPACE --reports-dir $GITHUB_WORKSPACE/reports --cache --deep
+
+      # Upload the report
+      - name: Upload Dep-Scan Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: dep-scan-report
+          path: $GITHUB_WORKSPACE/reports
