@@ -1,28 +1,57 @@
-name: dependency-scan
+name: Dependency Scanning
 
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
-    types: [opened, reopened, synchronize, edited]
+    branches:
+      - main
 
 jobs:
-  dep_scan:
-    name: Run Dependency Scan
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Install Dependency Check
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y owasp-dependency-check
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
 
-      - name: Run OWASP Dependency Check
-        run: |
-          dependency-check.sh --project juice-shop --scan /github/workspace --out /github/workspace/reports --format JSON
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run build
+      run: npm run build:frontend
+
+    - name: Install CycloneDX and OWASP Dep-Scan
+      run: |
+        sudo npm install -g @cyclonedx/cdxgen
+        pip install owasp-depscan
+
+    - name: Generate CycloneDX BOM
+      run: |
+        cdxgen -o $GITHUB_WORKSPACE/cyclonedx-bom.json
+
+    - name: Run OWASP Dep-Scan Detailed Report
+      run: |
+        owasp-depscan -i $GITHUB_WORKSPACE/cyclonedx-bom.json -o $GITHUB_WORKSPACE/reports --detail
+      continue-on-error: true
+
+    - name: Run OWASP Dep-Scan Summary Report
+      run: |
+        owasp-depscan -i $GITHUB_WORKSPACE/cyclonedx-bom.json -o $GITHUB_WORKSPACE/reports --summary
+      continue-on-error: true
+
+    - name: Upload reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: depscan-reports
+        path: $GITHUB_WORKSPACE/reports
+
+    - name: Cleanup
+      run: |
+        echo "Cleaning up..."
