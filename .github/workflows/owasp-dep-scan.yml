@@ -1,56 +1,33 @@
-name: OWASP Dep-Scan CI
+name: owasp-dep-scan
 
 on:
   push:
     branches:
-      - main
       - master
   pull_request:
-    branches:
-      - main
-      - master
+    types: [opened, reopened, synchronize, edited]
 
 jobs:
-  dep-scan:
+  dep_scan:
+    name: Run OWASP Dep-Scan
     runs-on: ubuntu-latest
+
     steps:
-      # Checkout the Juice Shop code
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      # Install dependencies (Node.js)
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
         with:
-          node-version: '16'
+          ref: master
 
-      - name: Install Project Dependencies
-        run: npm install
-
-      # Install OWASP Dep-Scan
-      - name: Install OWASP Dep-Scan
-        run: |
-          curl -LO https://github.com/appthreat/depscan-bin/releases/latest/download/depscan-linux-amd64
-          chmod +x depscan-linux-amd64
-
-      # Run the scan for detailed report
-      - name: Run OWASP Dep-Scan Detailed Report
-        run: |
-          ./depscan-linux-amd64 --src $GITHUB_WORKSPACE --reports-dir $GITHUB_WORKSPACE/reports --cache --deep
-        continue-on-error: true
-
-      # Run the scan for summary report (less verbose)
-      - name: Run OWASP Dep-Scan Summary Report
-        run: |
-          ./depscan-linux-amd64 --src $GITHUB_WORKSPACE --cache --summary-only
-
-      # Upload the detailed report
-      - name: Upload Dep-Scan Detailed Report
-        uses: actions/upload-artifact@v3
+      - name: Run OWASP Dep-Scan
+        uses: AppThreat/dep-scan-action@master
         with:
-          name: dep-scan-detailed-report
-          path: $GITHUB_WORKSPACE/reports
-
-      # Upload the summary report (if needed)
-      - name: Upload Dep-Scan Summary Report
-        run: echo "Summary output is printed in the logs."
+          # The target directory to be scanned. Optional.
+          src: /github/workspace
+          # Output file for the generated report. Optional.
+          report_file: /github/workspace/reports/depscan.json
+          # Must equal "I have sponsored OWASP-dep-scan" for action to run. Required.
+          profile: generic
+          thank_you: "I have not sponsored OWASP-dep-scan."
+        env:
+          VDB_HOME: ${{ github.workspace }}/db
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
