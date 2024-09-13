@@ -1,4 +1,4 @@
-name: owasp-dep-scan
+name: dependency-scan
 
 on:
   push:
@@ -9,25 +9,20 @@ on:
 
 jobs:
   dep_scan:
-    name: Run OWASP Dep-Scan
+    name: Run Dependency Scan
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          ref: master
 
-      - name: Run OWASP Dep-Scan
-        uses: AppThreat/dep-scan-action@master
-        with:
-          # The target directory to be scanned. Optional.
-          src: /github/workspace
-          # Output file for the generated report. Optional.
-          report_file: /github/workspace/reports/depscan.json
-          # Must equal "I have sponsored OWASP-dep-scan" for action to run. Required.
-          profile: generic
-          thank_you: "I have not sponsored OWASP-dep-scan."
+      - name: Install Dependency Check
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y owasp-dependency-check
+
+      - name: Run OWASP Dependency Check
+        run: |
+          dependency-check.sh --project juice-shop --scan /github/workspace --out /github/workspace/reports --format JSON
         env:
-          VDB_HOME: ${{ github.workspace }}/db
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
