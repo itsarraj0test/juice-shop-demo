@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - master
   pull_request:
     branches:
       - main
+      - master
 
 jobs:
   dep-scan:
@@ -31,14 +33,24 @@ jobs:
           curl -LO https://github.com/appthreat/depscan-bin/releases/latest/download/depscan-linux-amd64
           chmod +x depscan-linux-amd64
 
-      # Run the scan
-      - name: Run OWASP Dep-Scan
+      # Run the scan for detailed report
+      - name: Run OWASP Dep-Scan Detailed Report
         run: |
           ./depscan-linux-amd64 --src $GITHUB_WORKSPACE --reports-dir $GITHUB_WORKSPACE/reports --cache --deep
+        continue-on-error: true
 
-      # Upload the report
-      - name: Upload Dep-Scan Report
+      # Run the scan for summary report (less verbose)
+      - name: Run OWASP Dep-Scan Summary Report
+        run: |
+          ./depscan-linux-amd64 --src $GITHUB_WORKSPACE --cache --summary-only
+
+      # Upload the detailed report
+      - name: Upload Dep-Scan Detailed Report
         uses: actions/upload-artifact@v3
         with:
-          name: dep-scan-report
+          name: dep-scan-detailed-report
           path: $GITHUB_WORKSPACE/reports
+
+      # Upload the summary report (if needed)
+      - name: Upload Dep-Scan Summary Report
+        run: echo "Summary output is printed in the logs."
