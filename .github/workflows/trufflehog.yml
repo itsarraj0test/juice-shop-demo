@@ -4,25 +4,25 @@ on:
   push:
     branches:
       - master
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, synchronize, edited]
 
 jobs:
   trufflehog_scan:
-    name: TruffleHog Bot Scan
+    name: Running TruffleHog Secret Scan
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Install TruffleHog
         run: |
           pip install truffleHog
-          
+
       - name: Run TruffleHog Scan
         run: |
-          trufflehog git https://github.com/trufflesecurity/test_keys --only-verified
+          trufflehog --regex --entropy=False https://github.com/itsarraj/juice-shop-demo/
 
