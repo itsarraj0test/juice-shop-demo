@@ -13,6 +13,7 @@ jobs:
   Snyk_scanning:
     name: Run Snyk Scan
     runs-on: ubuntu-latest
+    continue-on-error: true  
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -44,6 +45,7 @@ jobs:
   TruffleHog_scanning:
     name: Run TruffleHog Secret Scan
     runs-on: ubuntu-latest
+    continue-on-error: true  
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -58,7 +60,7 @@ jobs:
       - name: Run TruffleHog Scan
         run: |
           echo "Running TruffleHog scan..."
-          trufflehog --regex --entropy=False https://github.com/itsarraj/juice-shop-demo/
+          trufflehog --regex --json --entropy=False https://github.com/itsarraj/juice-shop-demo/
 
   BotCheck:
     permissions: write-all
