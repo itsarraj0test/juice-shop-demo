@@ -1,0 +1,72 @@
+name: Security Scans and Bot Check
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+jobs:
+  Snyk_scanning:
+    name: Run Snyk Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Remove Node Modules and Lock File
+        run: |
+          echo "Removing node_modules and package-lock.json..."
+          rm -rf node_modules
+          rm -f package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          echo "Running npm install..."
+          npm install
+
+      - name: Download and Authenticate Snyk CLI
+        run: |
+          echo "Downloading and authenticating Snyk CLI..."
+          curl -Lo ./snyk "https://github.com/snyk/snyk/releases/download/v1.1100.0/snyk-linux"
+          chmod +x snyk
+          ./snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run Snyk Test and Monitor (Colorful Output)
+        run: |
+          echo "Running Snyk test and monitor..."
+          ./snyk test --all-projects --color || true
+          ./snyk monitor --all-projects || true
+
+  TruffleHog_scanning:
+    name: Run TruffleHog Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Fetch all history so multiple commits can be scanned
+
+      - name: Install TruffleHog
+        run: |
+          echo "Installing TruffleHog..."
+          pip install truffleHog
+
+      - name: Run TruffleHog Scan
+        run: |
+          echo "Running TruffleHog scan..."
+          trufflehog --regex --entropy=False https://github.com/itsarraj/juice-shop-demo/
+
+  BotCheck:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    needs: [Snyk_scanning, TruffleHog_scanning]
+    steps:
+      - name: Run PR Scan Bot
+        uses: itsarraj/pr-scan-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
