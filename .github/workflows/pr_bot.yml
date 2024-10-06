@@ -1,7 +1,7 @@
 name: Security Scans and Bot Check
 
 on:
-  pull_request_target:
+  pull_request:  # Trigger workflow for PRs (more secure for external contributions)
     types: [opened, reopened, synchronize, edited]
 
 permissions:
@@ -51,7 +51,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
 
       - name: Install TruffleHog
         run: |
@@ -64,24 +64,24 @@ jobs:
           trufflehog --regex --json --entropy=False ${{ github.event.pull_request.head.repo.clone_url }}
 
   BotCheck:
-  runs-on: ubuntu-latest
-  needs: [Snyk_scanning, TruffleHog_scanning]
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+    name: Run Bot Check
+    runs-on: ubuntu-latest
+    needs: [Snyk_scanning, TruffleHog_scanning]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Install dependencies
-      run: |
-        npm ci
-    
-    - name: Run PR Scan Bot
-      run: |
-        node index.js
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
+      - name: Install dependencies
+        run: |
+          npm ci
+
+      - name: Run PR Scan Bot
+        run: |
+          node index.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
