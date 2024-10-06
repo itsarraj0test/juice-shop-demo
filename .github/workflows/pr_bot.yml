@@ -5,6 +5,7 @@ on:
     types: [opened, reopened, synchronize, edited]
 
 permissions:
+  actions: read
   issues: write
   pull-requests: write
   contents: read
@@ -60,7 +61,7 @@ jobs:
       - name: Run TruffleHog Scan
         run: |
           echo "Running TruffleHog scan..."
-          trufflehog --regex --json --entropy=False https://github.com/itsarraj/juice-shop-demo/
+          trufflehog --regex --json --entropy=False ${{ github.event.pull_request.head.repo.clone_url }}
 
   BotCheck:
   runs-on: ubuntu-latest
