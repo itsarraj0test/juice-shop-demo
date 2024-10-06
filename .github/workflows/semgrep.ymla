@@ -3,7 +3,7 @@ name: Running SAST Security Scan (Semgrep)
 on:
   push:
     branches:
-      - master
+      - main
   pull_request_target:
     types: [opened, reopened, synchronize, edited]
   issues:
